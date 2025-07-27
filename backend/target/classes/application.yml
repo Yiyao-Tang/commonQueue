@@ -1,0 +1,68 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: common-queue-backend
+    
+  datasource:
+    url: jdbc:mysql://localhost:3306/common_queue?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: newpassword
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:commonQueueSecretKeyThatShouldBeVeryLongAndSecure2024!}
+    expiration: 86400000 # 24 hours in milliseconds
+
+queue:
+  default:
+    service-time-minutes: 10
+    notification-advance-minutes: 15
+  
+cors:
+  allowed-origins: ${CORS_ORIGINS:http://localhost:4200,http://localhost:3000}
+
+logging:
+  level:
+    sg.edu.nus.iss.commonQueueApp: ${LOG_LEVEL:INFO}
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/common-queue.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
