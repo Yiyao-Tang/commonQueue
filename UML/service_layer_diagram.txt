@@ -1,0 +1,152 @@
+@startuml Service_Layer_Diagram
+!theme cerulean-outline
+title Common Queue System - Service Layer Class Diagram
+
+class QueueService {
+  -QueueRepository queueRepository
+  -QueueEntryRepository queueEntryRepository
+  -BusinessRepository businessRepository
+  -CustomerRepository customerRepository
+  -NotificationService notificationService
+  --
+  +createQueue(Long, QueueTimingRequest): Queue
+  +updateQueueTiming(Long, QueueTimingRequest): Queue
+  +deleteQueue(Long): void
+  +getQueueStatus(Long): QueueStatusResponse
+  +joinQueue(Long, Long): QueueEntry
+  +callNextCustomer(Long): QueueEntry
+  +markAsServed(Long): QueueEntry
+  +cancelQueueEntry(Long): QueueEntry
+  +markAsNoShow(Long): QueueEntry
+  +getCustomerQueuePosition(Long, Long): QueueEntry
+  +getActiveQueuesByBusinessId(Long): List<Queue>
+  +getQueueEntries(Long): List<QueueEntry>
+  +resetQueue(Long): void
+  +getQueueStatistics(Long, LocalDateTime, LocalDateTime): QueueStatistics
+  -updateEstimatedWaitTimes(Queue): void
+}
+
+class NotificationService {
+  -NotificationRepository notificationRepository
+  -JavaMailSender mailSender
+  --
+  +sendQueueJoinedNotification(QueueEntry): void
+  +sendTurnApproachingNotification(QueueEntry): void
+  +sendTurnReadyNotification(QueueEntry): void
+  +sendQueueCancellationNotification(QueueEntry): void
+  +sendFeedbackRequestNotification(QueueEntry): void
+  +sendReminderNotification(QueueEntry): void
+  +sendQueueDelayNotification(QueueEntry, int): void
+  +processPendingNotifications(): void
+  +retryFailedNotifications(): void
+  +getCustomerNotifications(Long): List<Notification>
+  +markNotificationAsRead(Long): void
+  +getUnreadNotificationsCount(Long): Long
+  +cleanupOldNotifications(): void
+  -sendEmailNotification(Customer, String, String, NotificationType, QueueEntry): void
+  -sendSmsNotification(Customer, String, String, NotificationType, QueueEntry): void
+}
+
+class BusinessUserDetailsService {
+  -BusinessRepository businessRepository
+  --
+  +loadUserByUsername(String): UserDetails
+}
+
+interface QueueRepository {
+  +findByBusinessAndIsActiveTrueOrderByQueueNameAsc(Business): List<Queue>
+  +findByBusinessIdAndIsActiveTrue(Long): List<Queue>
+  +findByIdAndIsActiveTrue(Long): Optional<Queue>
+  +findByQueueTypeAndIsActiveTrue(QueueType): List<Queue>
+  +findActiveQueuesWithCustomers(Long): List<Queue>
+  +countActiveEntriesInQueue(Long): Long
+  +findQueuesByCustomerId(Long): List<Queue>
+}
+
+interface QueueEntryRepository {
+  +findByQueueAndStatusInOrderByQueueNumberAsc(Queue, List<QueueEntryStatus>): List<QueueEntry>
+  +findByCustomerAndStatusIn(Customer, List<QueueEntryStatus>): List<QueueEntry>
+  +findByQueueAndCustomerAndStatusIn(Queue, Customer, List<QueueEntryStatus>): Optional<QueueEntry>
+  +findActiveEntriesByQueueId(Long): List<QueueEntry>
+  +findActiveEntriesByCustomerId(Long): List<QueueEntry>
+  +findEntriesReadyForNotification(): List<QueueEntry>
+  +findEntriesByBusinessIdAndDateRange(Long, LocalDateTime, LocalDateTime): List<QueueEntry>
+  +countWaitingEntriesInQueue(Long): Long
+  +findByQueueIdAndQueueNumber(Long, Integer): Optional<QueueEntry>
+  +findMaxQueueNumberByQueueId(Long): Optional<Integer>
+}
+
+interface BusinessRepository {
+  +findByEmail(String): Optional<Business>
+  +findByBusinessTypeAndIsActiveTrue(BusinessType): List<Business>
+  +findByIsActiveTrueOrderByBusinessNameAsc(): List<Business>
+  +findActiveAndVerifiedBusinesses(): List<Business>
+  +findByBusinessNameContainingIgnoreCaseAndIsActiveTrue(String): List<Business>
+  +findByLocationAndIsActiveTrue(String): List<Business>
+  +existsByEmail(String): boolean
+}
+
+interface CustomerRepository {
+  +findByEmail(String): Optional<Customer>
+  +findByPhone(String): Optional<Customer>
+  +findByEmailOrPhone(String, String): Optional<Customer>
+  +findByIsActiveTrueOrderByNameAsc(): List<Customer>
+  +findByNameContainingIgnoreCaseAndIsActiveTrue(String): List<Customer>
+  +findRecentlyActiveCustomers(LocalDateTime): List<Customer>
+  +existsByEmail(String): boolean
+  +existsByPhone(String): boolean
+}
+
+interface NotificationRepository {
+  +findByCustomerOrderByCreatedAtDesc(Customer): List<Notification>
+  +findByStatusOrderByCreatedAtAsc(NotificationStatus): List<Notification>
+  +findByNotificationTypeAndStatusOrderByCreatedAtAsc(NotificationType, NotificationStatus): List<Notification>
+  +findPendingNotificationsOlderThan(LocalDateTime): List<Notification>
+  +findFailedNotificationsForRetry(): List<Notification>
+  +countUnreadNotificationsByCustomerId(Long): Long
+  +findRecentNotificationsByCustomerId(Long, LocalDateTime): List<Notification>
+}
+
+interface FeedbackRepository {
+  +findByBusinessOrderByCreatedAtDesc(Business): List<Feedback>
+  +findByBusinessIdOrderByCreatedAtDesc(Long): List<Feedback>
+  +findByCustomerOrderByCreatedAtDesc(Customer): List<Feedback>
+  +findByFeedbackTypeOrderByCreatedAtDesc(FeedbackType): List<Feedback>
+  +findByBusinessIdAndDateRange(Long, LocalDateTime, LocalDateTime): List<Feedback>
+  +getAverageAccuracyRatingByBusinessId(Long): Double
+  +getAverageServiceRatingByBusinessId(Long): Double
+  +countPositiveFeedbackByBusinessId(Long): Long
+  +countTotalFeedbackByBusinessId(Long): Long
+}
+
+interface StaffRepository {
+  +findByEmail(String): Optional<Staff>
+  +findByBusinessAndIsActiveTrueOrderByNameAsc(Business): List<Staff>
+  +findByBusinessIdAndIsActiveTrue(Long): List<Staff>
+  +findByRoleAndIsActiveTrue(StaffRole): List<Staff>
+  +findByBusinessIdAndRoleAndIsActiveTrue(Long, StaffRole): List<Staff>
+  +existsByEmail(String): boolean
+  +countActiveStaffByBusinessId(Long): Long
+}
+
+class QueueStatistics {
+  -long totalCustomers
+  -long servedCustomers
+  -long cancelledCustomers
+  -long noShowCustomers
+  -double averageWaitTimeMinutes
+}
+
+' Relationships
+QueueService --> QueueRepository
+QueueService --> QueueEntryRepository
+QueueService --> BusinessRepository
+QueueService --> CustomerRepository
+QueueService --> NotificationService
+QueueService --> QueueStatistics
+
+NotificationService --> NotificationRepository
+
+BusinessUserDetailsService --> BusinessRepository
+
+@enduml

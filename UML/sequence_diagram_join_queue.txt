@@ -1,0 +1,84 @@
+@startuml Join_Queue_Sequence
+!theme cerulean-outline
+title Common Queue System - Join Queue Process
+
+actor Customer
+participant "Angular Frontend" as Frontend
+participant "QueueController" as Controller
+participant "QueueService" as Service
+participant "QueueRepository" as QueueRepo
+participant "CustomerRepository" as CustomerRepo
+participant "QueueEntryRepository" as EntryRepo
+participant "NotificationService" as NotificationSvc
+participant "Database" as DB
+
+Customer -> Frontend: Click "Join Queue"
+Frontend -> Frontend: Check if customer registered
+alt Customer not registered
+    Frontend -> Customer: Redirect to registration
+    Customer -> Frontend: Fill registration form
+    Frontend -> Controller: POST /customers/register
+    Controller -> CustomerRepo: save(customer)
+    CustomerRepo -> DB: INSERT customer
+    DB --> CustomerRepo: customer saved
+    CustomerRepo --> Controller: Customer entity
+    Controller --> Frontend: CustomerResponse
+end
+
+Frontend -> Controller: POST /queues/{queueId}/join
+note right: JoinQueueRequest with customerId
+
+Controller -> Service: joinQueue(queueId, customerId)
+
+Service -> QueueRepo: findById(queueId)
+QueueRepo -> DB: SELECT queue
+DB --> QueueRepo: Queue entity
+QueueRepo --> Service: Queue
+
+Service -> Service: Check if queue is active
+Service -> Service: Check if queue at capacity
+
+Service -> CustomerRepo: findById(customerId)
+CustomerRepo -> DB: SELECT customer
+DB --> CustomerRepo: Customer entity
+CustomerRepo --> Service: Customer
+
+Service -> EntryRepo: findByQueueAndCustomerAndStatusIn()
+EntryRepo -> DB: SELECT existing entry
+DB --> EntryRepo: Optional<QueueEntry>
+EntryRepo --> Service: Check if already in queue
+
+alt Customer already in queue
+    Service --> Controller: RuntimeException
+    Controller --> Frontend: Error response
+    Frontend --> Customer: "Already in queue" message
+else Customer not in queue
+    Service -> Service: Generate next queue number
+    Service -> Service: Calculate estimated wait time
+    Service -> Service: Create QueueEntry
+    
+    Service -> EntryRepo: save(queueEntry)
+    EntryRepo -> DB: INSERT queue_entry
+    DB --> EntryRepo: QueueEntry saved
+    EntryRepo --> Service: QueueEntry entity
+    
+    Service -> QueueRepo: save(queue)
+    QueueRepo -> DB: UPDATE queue next_number
+    DB --> QueueRepo: Queue updated
+    QueueRepo --> Service: Updated Queue
+    
+    Service -> NotificationSvc: sendQueueJoinedNotification(queueEntry)
+    
+    par Async notification
+        NotificationSvc -> NotificationSvc: Create notification record
+        NotificationSvc -> DB: INSERT notification
+        NotificationSvc -> NotificationSvc: Send email/SMS
+        NotificationSvc -> DB: UPDATE notification status
+    end
+    
+    Service --> Controller: QueueEntry
+    Controller --> Frontend: QueueEntryResponse
+    Frontend --> Customer: "Successfully joined queue" + position info
+end
+
+@enduml

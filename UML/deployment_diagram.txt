@@ -1,0 +1,184 @@
+@startuml Deployment_Diagram
+!theme cerulean-outline
+title Common Queue System - Deployment Diagram
+
+node "User Devices" {
+  artifact "Web Browser" as Browser
+  artifact "Mobile App" as MobileApp
+  artifact "Public Display" as DisplayScreen
+}
+
+cloud "Internet" as Internet
+
+node "AWS Infrastructure" {
+  node "CloudFront CDN" as CDN {
+    artifact "Static Assets" as StaticAssets
+    artifact "Angular Build" as AngularBuild
+  }
+  
+  node "Application Load Balancer" as ALB {
+    component "Load Balancer" as LB
+  }
+  
+  node "ECS Cluster" as ECS {
+    node "ECS Service" as ECSService {
+      node "Task 1" as Task1 {
+        component "Spring Boot App" as App1
+        component "Tomcat Server" as Tomcat1
+      }
+      node "Task 2" as Task2 {
+        component "Spring Boot App" as App2
+        component "Tomcat Server" as Tomcat2
+      }
+      node "Task N" as TaskN {
+        component "Spring Boot App" as AppN
+        component "Tomcat Server" as TomcatN
+      }
+    }
+  }
+  
+  node "RDS MySQL" as RDS {
+    database "Primary DB" as PrimaryDB
+    database "Read Replica" as ReadReplica
+  }
+  
+  node "S3 Bucket" as S3 {
+    artifact "Application Logs" as Logs
+    artifact "Backup Files" as Backups
+    artifact "Static Resources" as Resources
+  }
+  
+  node "ElastiCache" as Cache {
+    component "Redis Cluster" as Redis
+  }
+  
+  node "SES/SNS" as Messaging {
+    component "Email Service" as SES
+    component "SMS Service" as SNS
+  }
+}
+
+node "External Services" {
+  cloud "SMTP Provider" as SMTP
+  cloud "SMS Gateway" as SMSGateway
+}
+
+node "Development Environment" as DevEnv {
+  node "Developer Machine" as DevMachine {
+    component "Angular CLI" as AngularCLI
+    component "Spring Boot" as SpringBootDev
+    component "MySQL Local" as MySQLLocal
+  }
+}
+
+node "CI/CD Pipeline" as CICD {
+  component "GitHub Actions" as GitHub
+  component "Docker Registry" as ECR
+  component "Build Pipeline" as BuildPipeline
+}
+
+' User connections
+Browser --> Internet : HTTPS
+MobileApp --> Internet : HTTPS
+DisplayScreen --> Internet : HTTPS/WebSocket
+
+' Internet to AWS
+Internet --> CDN : HTTPS
+Internet --> ALB : HTTPS
+
+' CDN relationships
+CDN --> S3 : Static Content
+CDN --> ALB : API Requests
+
+' Load balancer to ECS
+ALB --> LB
+LB --> App1 : HTTP
+LB --> App2 : HTTP
+LB --> AppN : HTTP
+
+' ECS to dependencies
+App1 --> PrimaryDB : JDBC
+App2 --> PrimaryDB : JDBC
+AppN --> ReadReplica : JDBC (Read Only)
+
+App1 --> Redis : Cache
+App2 --> Redis : Cache
+AppN --> Redis : Cache
+
+App1 --> SES : Email
+App2 --> SNS : SMS
+AppN --> S3 : Logs/Backups
+
+' External service connections
+SES --> SMTP : Email Delivery
+SNS --> SMSGateway : SMS Delivery
+
+' Development connections
+DevMachine --> GitHub : Push Code
+DevMachine --> MySQLLocal : Local Development
+
+' CI/CD Pipeline
+GitHub --> BuildPipeline : Trigger Build
+BuildPipeline --> ECR : Push Images
+ECR --> ECS : Deploy
+
+' Deployment specifications
+note right of ECS
+  **Auto Scaling Configuration:**
+  - Min: 2 instances
+  - Max: 10 instances
+  - Target CPU: 70%
+  - Health checks enabled
+end note
+
+note right of RDS
+  **Database Configuration:**
+  - Multi-AZ deployment
+  - Automated backups
+  - Read replicas for scaling
+  - Connection pooling
+end note
+
+note right of CDN
+  **CDN Configuration:**
+  - Global edge locations
+  - GZIP compression
+  - Browser caching
+  - SSL termination
+end note
+
+note left of Redis
+  **Cache Strategy:**
+  - Session storage
+  - Queue status cache
+  - Business data cache
+  - TTL: 5-15 minutes
+end note
+
+deployment Environment1 {
+  node "Production" {
+    ALB --> ECS
+    ECS --> RDS
+    ECS --> S3
+    ECS --> Cache
+    ECS --> Messaging
+  }
+}
+
+deployment Environment2 {
+  node "Staging" {
+    component "Staging ALB" as StagingALB
+    component "Staging ECS" as StagingECS
+    component "Staging RDS" as StagingRDS
+  }
+}
+
+deployment Environment3 {
+  node "Development" {
+    DevMachine --> MySQLLocal
+    DevMachine --> AngularCLI
+    DevMachine --> SpringBootDev
+  }
+}
+
+@enduml

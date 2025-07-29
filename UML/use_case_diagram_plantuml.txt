@@ -1,0 +1,91 @@
+@startuml Use_Case_Diagram
+!theme cerulean-outline
+title Common Queue System - Use Case Diagram
+
+left to right direction
+
+actor "Customer" as Customer
+actor "Business Owner" as BusinessOwner
+actor "Staff Member" as Staff
+actor "System" as System
+
+package "Customer Functions" {
+  usecase "Register as Customer" as UC1
+  usecase "Browse Businesses" as UC2
+  usecase "View Queue Status" as UC3
+  usecase "Join Queue" as UC4
+  usecase "Track Queue Position" as UC5
+  usecase "Cancel Queue Entry" as UC6
+  usecase "Receive Notifications" as UC7
+  usecase "Provide Feedback" as UC8
+  usecase "View Queue History" as UC9
+}
+
+package "Business Management" {
+  usecase "Business Login" as UC10
+  usecase "Create Queue" as UC11
+  usecase "Update Queue Settings" as UC12
+  usecase "Call Next Customer" as UC13
+  usecase "Mark Customer Served" as UC14
+  usecase "Mark Customer No-Show" as UC15
+  usecase "View Queue Analytics" as UC16
+  usecase "Manage Staff" as UC17
+  usecase "Reset Queue" as UC18
+  usecase "View Business Dashboard" as UC19
+  usecase "Public Display Management" as UC20
+}
+
+package "System Operations" {
+  usecase "Send Notifications" as UC21
+  usecase "Calculate Wait Times" as UC22
+  usecase "Update Queue Status" as UC23
+  usecase "Generate Reports" as UC24
+  usecase "Backup Data" as UC25
+}
+
+' Customer relationships
+Customer --> UC1
+Customer --> UC2
+Customer --> UC3
+Customer --> UC4
+Customer --> UC5
+Customer --> UC6
+Customer --> UC7
+Customer --> UC8
+Customer --> UC9
+
+' Business Owner relationships
+BusinessOwner --> UC10
+BusinessOwner --> UC11
+BusinessOwner --> UC12
+BusinessOwner --> UC16
+BusinessOwner --> UC17
+BusinessOwner --> UC19
+BusinessOwner --> UC20
+
+' Staff relationships
+Staff --> UC10
+Staff --> UC13
+Staff --> UC14
+Staff --> UC15
+Staff --> UC18
+
+' System relationships
+System --> UC21
+System --> UC22
+System --> UC23
+System --> UC24
+System --> UC25
+
+' Include relationships
+UC4 ..> UC1 : <<include>>
+UC5 ..> UC7 : <<include>>
+UC13 ..> UC21 : <<include>>
+UC14 ..> UC23 : <<include>>
+UC15 ..> UC23 : <<include>>
+
+' Extend relationships
+UC8 ..> UC5 : <<extend>>
+UC6 ..> UC5 : <<extend>>
+
+@enduml

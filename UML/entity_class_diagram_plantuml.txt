@@ -1,0 +1,253 @@
+@startuml Entity_Class_Diagram
+!theme cerulean-outline
+title Common Queue System - Entity Class Diagram
+
+class Business {
+  -Long id
+  -String businessName
+  -String email
+  -String password
+  -String phone
+  -String address
+  -String description
+  -String logoUrl
+  -String themeColor
+  -LocalTime openingTime
+  -LocalTime closingTime
+  -Boolean isActive
+  -Boolean isVerified
+  -BusinessType businessType
+  -LocalDateTime createdAt
+  -LocalDateTime updatedAt
+  -List<Queue> queues
+  -List<Staff> staff
+  --
+  +isOpen(): boolean
+  +addQueue(Queue): void
+  +removeQueue(Queue): void
+}
+
+class Queue {
+  -Long id
+  -String queueName
+  -String description
+  -Integer avgServiceTimeMinutes
+  -Integer currentNumber
+  -Integer nextNumber
+  -Boolean isActive
+  -QueueType queueType
+  -Integer maxCapacity
+  -String colorCode
+  -LocalDateTime createdAt
+  -LocalDateTime updatedAt
+  -List<QueueEntry> queueEntries
+  --
+  +getCurrentQueueLength(): int
+  +getEstimatedWaitTimeMinutes(): int
+  +generateNextNumber(): Integer
+  +isAtCapacity(): boolean
+  +resetQueue(): void
+  +getWaitingCustomersCount(): long
+  +getServedTodayCount(): long
+}
+
+class Customer {
+  -Long id
+  -String name
+  -String email
+  -String phone
+  -NotificationPreference notificationPreference
+  -String languagePreference
+  -Boolean isActive
+  -String avatarUrl
+  -LocalDateTime lastLogin
+  -LocalDateTime createdAt
+  -LocalDateTime updatedAt
+  -List<QueueEntry> queueEntries
+  -List<Feedback> feedbacks
+  -List<Business> favoriteBusinesses
+  --
+  +canReceiveEmailNotifications(): boolean
+  +canReceiveSmsNotifications(): boolean
+  +isCurrentlyInQueue(): boolean
+  +updateLastLogin(): void
+  +getTotalVisitsCount(): long
+}
+
+class QueueEntry {
+  -Long id
+  -Integer queueNumber
+  -QueueEntryStatus status
+  -Integer estimatedWaitTimeMinutes
+  -LocalDateTime joinedAt
+  -LocalDateTime calledAt
+  -LocalDateTime servedAt
+  -LocalDateTime cancelledAt
+  -LocalDateTime noShowAt
+  -Integer priorityLevel
+  -String notes
+  -Boolean notificationSent
+  -Boolean reminderSent
+  -LocalDateTime updatedAt
+  --
+  +markAsCalled(): void
+  +markAsServed(): void
+  +markAsCancelled(): void
+  +markAsNoShow(): void
+  +isActive(): boolean
+  +getPositionInQueue(): int
+  +getActualWaitTimeMinutes(): Long
+  +shouldNotify(): boolean
+}
+
+class Staff {
+  -Long id
+  -String name
+  -String email
+  -String password
+  -String phone
+  -StaffRole role
+  -Boolean isActive
+  -LocalDateTime lastLogin
+  -LocalDateTime createdAt
+  -LocalDateTime updatedAt
+  --
+  +isAdmin(): boolean
+  +isManager(): boolean
+  +updateLastLogin(): void
+}
+
+class Feedback {
+  -Long id
+  -Integer accuracyRating
+  -Integer serviceRating
+  -String comment
+  -FeedbackType feedbackType
+  -Boolean isAnonymous
+  -LocalDateTime createdAt
+  -LocalDateTime updatedAt
+  --
+  +isPositiveFeedback(): boolean
+  +getOverallRating(): Double
+}
+
+class Notification {
+  -Long id
+  -NotificationType notificationType
+  -NotificationChannel channel
+  -String title
+  -String message
+  -String recipient
+  -NotificationStatus status
+  -LocalDateTime sentAt
+  -LocalDateTime readAt
+  -String errorMessage
+  -Integer retryCount
+  -LocalDateTime createdAt
+  -LocalDateTime updatedAt
+  --
+  +markAsSent(): void
+  +markAsFailed(String): void
+  +markAsRead(): void
+  +incrementRetryCount(): void
+  +canRetry(): boolean
+  +isPending(): boolean
+}
+
+enum BusinessType {
+  CLINIC
+  RESTAURANT
+  RETAIL
+  SERVICE_CENTER
+  PHARMACY
+  BANK
+  GOVERNMENT
+  OTHER
+}
+
+enum QueueType {
+  GENERAL
+  CONSULTATION
+  PHARMACY
+  CASHIER
+  APPOINTMENT
+  PRIORITY
+  EXPRESS
+  WALKIN
+}
+
+enum QueueEntryStatus {
+  WAITING
+  CALLED
+  SERVED
+  CANCELLED
+  NO_SHOW
+}
+
+enum StaffRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum NotificationPreference {
+  EMAIL
+  SMS
+  BOTH
+  NONE
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationType {
+  QUEUE_JOINED
+  TURN_APPROACHING
+  TURN_READY
+  QUEUE_CANCELLED
+  QUEUE_DELAYED
+  REMINDER
+  FEEDBACK_REQUEST
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum FeedbackType {
+  QUEUE_ACCURACY
+  SERVICE_QUALITY
+  GENERAL
+  COMPLAINT
+  SUGGESTION
+}
+
+' Relationships
+Business ||--o{ Queue : "has"
+Business ||--o{ Staff : "employs"
+Business ||--o{ Feedback : "receives"
+Business --> BusinessType
+Queue ||--o{ QueueEntry : "contains"
+Queue --> QueueType
+Customer ||--o{ QueueEntry : "joins"
+Customer ||--o{ Feedback : "provides"
+Customer ||--o{ Notification : "receives"
+Customer --> NotificationPreference
+Customer }o--o{ Business : "favorites"
+QueueEntry ||--o{ Notification : "triggers"
+QueueEntry ||--o{ Feedback : "rated by"
+QueueEntry --> QueueEntryStatus
+Staff --> StaffRole
+Feedback --> FeedbackType
+Notification --> NotificationChannel
+Notification --> NotificationType
+Notification --> NotificationStatus
+
+@enduml

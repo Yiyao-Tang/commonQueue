@@ -1,0 +1,199 @@
+@startuml Package_Diagram
+!theme cerulean-outline
+title Common Queue System - Package Architecture Diagram
+
+package "Frontend Application" {
+  package "src/app" {
+    package "components" {
+      package "customer" {
+        class HomeComponent
+        class BusinessListComponent
+        class BusinessDetailComponent
+        class CustomerRegistrationComponent
+        class CustomerDashboardComponent
+        class QueueDetailComponent
+        class FeedbackFormComponent
+      }
+      
+      package "business" {
+        class BusinessLoginComponent
+        class BusinessDashboardComponent
+        class QueueManagementComponent
+        class PublicDisplayComponent
+      }
+    }
+    
+    package "services" {
+      class ApiService
+      class QueueService
+      class BusinessService
+      class CustomerService
+      class FeedbackService
+      class AuthService
+    }
+    
+    package "models" {
+      class Business
+      class Queue
+      class Customer
+      class QueueEntry
+      class Feedback
+      class ApiResponse
+    }
+    
+    package "interceptors" {
+      class AuthInterceptor
+    }
+    
+    package "environments" {
+      class Environment
+      class EnvironmentProd
+    }
+  }
+}
+
+package "Backend Application" {
+  package "sg.edu.nus.iss.commonQueueApp" {
+    package "controller" {
+      class QueueController
+      class BusinessController
+      class CustomerController
+      class FeedbackController
+      class DashboardController
+    }
+    
+    package "service" {
+      class QueueService
+      class NotificationService
+      class BusinessUserDetailsService
+    }
+    
+    package "repository" {
+      interface QueueRepository
+      interface BusinessRepository
+      interface CustomerRepository
+      interface QueueEntryRepository
+      interface FeedbackRepository
+      interface NotificationRepository
+      interface StaffRepository
+    }
+    
+    package "entity" {
+      class Business
+      class Queue
+      class Customer
+      class QueueEntry
+      class Staff
+      class Feedback
+      class Notification
+      
+      package "enums" {
+        enum BusinessType
+        enum QueueType
+        enum QueueEntryStatus
+        enum StaffRole
+        enum NotificationPreference
+        enum NotificationChannel
+        enum NotificationType
+        enum NotificationStatus
+        enum FeedbackType
+      }
+    }
+    
+    package "dto" {
+      class QueueTimingRequest
+      class QueueResponse
+      class QueueStatusResponse
+      class QueueEntryResponse
+      class BusinessResponse
+      class CustomerResponse
+      class FeedbackResponse
+      class ApiResponse
+      class JoinQueueRequest
+      class CustomerRegistrationRequest
+      class FeedbackRequest
+      class BusinessRegistrationRequest
+    }
+    
+    package "config" {
+      class SimpleSecurityConfig
+      class CorsConfig
+    }
+  }
+}
+
+package "External Dependencies" {
+  package "Spring Framework" {
+    package "spring-boot-starter-web"
+    package "spring-boot-starter-data-jpa"
+    package "spring-boot-starter-security"
+    package "spring-boot-starter-mail"
+    package "spring-boot-starter-websocket"
+  }
+  
+  package "Angular Framework" {
+    package "@angular/core"
+    package "@angular/material"
+    package "@angular/router"
+    package "@angular/forms"
+  }
+  
+  package "Database" {
+    package "MySQL 8.0"
+    package "Hibernate"
+  }
+}
+
+' Dependencies between packages
+components ..> services : uses
+services ..> models : uses
+components ..> models : uses
+interceptors ..> services : uses
+
+controller ..> service : uses
+controller ..> dto : uses
+service ..> repository : uses
+service ..> entity : uses
+repository ..> entity : uses
+dto ..> entity : transforms
+config ..> service : configures
+
+' Cross-layer dependencies
+"Frontend Application" ..> "Backend Application" : HTTP/REST API
+"Backend Application" ..> "External Dependencies" : depends on
+"Frontend Application" ..> "External Dependencies" : depends on
+
+note right of components
+  Angular components handle
+  user interface and user
+  interactions for both
+  customer and business users
+end note
+
+note right of service
+  Business logic layer
+  handles queue management,
+  notifications, and user
+  authentication
+end note
+
+note right of repository
+  Data access layer using
+  Spring Data JPA for
+  database operations
+end note
+
+note right of entity
+  JPA entities representing
+  database tables with
+  relationships and business
+  methods
+end note
+
+note right of dto
+  Data Transfer Objects for
+  API communication between
+  frontend and backend
+end note
+
+@enduml

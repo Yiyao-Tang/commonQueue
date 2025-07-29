@@ -1,0 +1,76 @@
+@startuml Call_Next_Customer_Sequence
+!theme cerulean-outline
+title Common Queue System - Call Next Customer Process
+
+actor "Staff Member" as Staff
+participant "Angular Frontend" as Frontend
+participant "QueueController" as Controller
+participant "QueueService" as Service
+participant "QueueRepository" as QueueRepo
+participant "QueueEntryRepository" as EntryRepo
+participant "NotificationService" as NotificationSvc
+participant "Database" as DB
+
+Staff -> Frontend: Click "Call Next Customer"
+Frontend -> Controller: POST /queues/{queueId}/call-next
+
+Controller -> Service: callNextCustomer(queueId)
+
+Service -> QueueRepo: findById(queueId)
+QueueRepo -> DB: SELECT queue
+DB --> QueueRepo: Queue entity
+QueueRepo --> Service: Queue
+
+Service -> EntryRepo: findByQueueAndStatusInOrderByQueueNumberAsc()
+note right: Find WAITING customers ordered by queue number
+EntryRepo -> DB: SELECT waiting entries
+DB --> EntryRepo: List<QueueEntry>
+EntryRepo --> Service: Waiting entries list
+
+alt No customers waiting
+    Service --> Controller: RuntimeException("No customers waiting")
+    Controller --> Frontend: Error response
+    Frontend --> Staff: "No customers in queue" message
+else Customers waiting
+    Service -> Service: Get first waiting customer (nextEntry)
+    Service -> Service: nextEntry.markAsCalled()
+    
+    Service -> EntryRepo: save(nextEntry)
+    EntryRepo -> DB: UPDATE queue_entry status='CALLED', called_at=NOW()
+    DB --> EntryRepo: QueueEntry updated
+    EntryRepo --> Service: Updated QueueEntry
+    
+    Service -> Service: queue.setCurrentNumber(nextEntry.queueNumber)
+    Service -> QueueRepo: save(queue)
+    QueueRepo -> DB: UPDATE queue current_number
+    DB --> QueueRepo: Queue updated
+    QueueRepo --> Service: Updated Queue
+    
+    Service -> NotificationSvc: sendTurnReadyNotification(nextEntry)
+    
+    par Async notification to called customer
+        NotificationSvc -> NotificationSvc: Create notification
+        NotificationSvc -> DB: INSERT notification
+        NotificationSvc -> NotificationSvc: Send email/SMS "Your turn is ready"
+        NotificationSvc -> DB: UPDATE notification status
+    end
+    
+    Service -> Service: updateEstimatedWaitTimes(queue)
+    note right: Update wait times for remaining customers
+    
+    loop For each remaining waiting customer
+        Service -> Service: Calculate new estimated wait time
+        Service -> EntryRepo: save(updatedEntry)
+        EntryRepo -> DB: UPDATE queue_entry estimated_wait_time
+    end
+    
+    Service --> Controller: Called QueueEntry
+    Controller --> Frontend: QueueEntryResponse
+    Frontend --> Staff: "Called customer {name} (Number {number})"
+    
+    Frontend -> Frontend: Refresh queue display
+    Frontend -> Frontend: Update current serving number
+    Frontend -> Frontend: Update waiting list
+end
+
+@enduml

@@ -8,13 +8,21 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import sg.edu.nus.iss.commonQueueApp.service.BusinessUserDetailsService;
 
+import java.util.Arrays;
+
+/**
+ * Debug Security Configuration - allows all requests for testing purposes
+ * WARNING: This configuration is NOT secure and should only be used for development/debugging
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -25,6 +33,7 @@ public class SimpleSecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        // Using NoOpPasswordEncoder for debugging - NOT recommended for production
         return NoOpPasswordEncoder.getInstance();
     }
 
@@ -39,26 +48,30 @@ public class SimpleSecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/queues/*/status").permitAll()
-                        .requestMatchers("/queues/*/join").permitAll()
-                        .requestMatchers("/queues/business/*/").permitAll()
-                        .requestMatchers("/queues/public/**").permitAll()
-                        .requestMatchers("/queues/customer/**").permitAll()
-                        .requestMatchers("/queues/*/position/**").permitAll()
-                        .requestMatchers("/queues/entries/*/cancel").permitAll()
-                        .anyRequest().authenticated()
+                        // Allow all requests for debugging purposes
+                        .anyRequest().permitAll()
                 )
-                .formLogin(form -> form
-                        .defaultSuccessUrl("/api/dashboard", true)
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .permitAll()
-                )
-                .csrf(csrf -> csrf.disable()); // Disable CSRF for API endpoints
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(form -> form.disable());
 
         return http.build();
     }

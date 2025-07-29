@@ -1,0 +1,48 @@
+<!-- Main App Template -->
+<div class="app-container" [class.loading]="loading">
+
+  <!-- Loading Screen -->
+  <div *ngIf="loading" class="app-loading">
+    <div class="loading-content">
+      <mat-spinner diameter="60"></mat-spinner>
+      <h2>{{ title }}</h2>
+      <p>Loading application...</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading" class="app-content">
+
+    <!-- Navigation (only show for business routes when logged in) -->
+    <app-navigation *ngIf="isBusinessRoute && isLoggedIn"></app-navigation>
+
+    <!-- Router Outlet -->
+    <main class="main-content"
+          [class.with-nav]="isBusinessRoute && isLoggedIn"
+          [class.customer-layout]="isCustomerRoute"
+          [class.public-layout]="isPublicRoute">
+      <router-outlet></router-outlet>
+    </main>
+
+    <!-- Global Loading Indicator -->
+    <div class="global-loading" *ngIf="loading">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    </div>
+  </div>
+</div>
+
+<!-- Connection Status Indicator -->
+<div class="connection-status"
+     *ngIf="isLoggedIn"
+     [class.connected]="webSocketService.isConnected"
+     [class.disconnected]="!webSocketService.isConnected">
+  <mat-icon *ngIf="webSocketService.isConnected"
+            matTooltip="Real-time updates active">
+    wifi
+  </mat-icon>
+  <mat-icon *ngIf="!webSocketService.isConnected"
+            matTooltip="Real-time updates disconnected"
+            color="warn">
+    wifi_off
+  </mat-icon>
+</div>

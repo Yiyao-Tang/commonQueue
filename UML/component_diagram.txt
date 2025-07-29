@@ -1,0 +1,189 @@
+@startuml Component_Diagram
+!theme cerulean-outline
+title Common Queue System - Component Diagram
+
+package "Frontend (Angular)" {
+  component [Customer Web App] as CustomerApp
+  component [Business Dashboard] as BusinessDashboard
+  component [Public Display] as PublicDisplay
+  component [Mobile Interface] as MobileInterface
+  
+  package "Angular Services" {
+    component [API Service] as APIService
+    component [Queue Service] as QueueSvc
+    component [Business Service] as BusinessSvc
+    component [Customer Service] as CustomerSvc
+    component [Feedback Service] as FeedbackSvc
+    component [Auth Service] as AuthSvc
+  }
+  
+  package "Angular Components" {
+    component [Home Component] as HomeComp
+    component [Business List] as BusinessListComp
+    component [Queue Detail] as QueueDetailComp
+    component [Customer Registration] as CustomerRegComp
+    component [Feedback Form] as FeedbackComp
+    component [Queue Management] as QueueMgmtComp
+  }
+}
+
+package "Backend (Spring Boot)" {
+  package "Controller Layer" {
+    component [Queue Controller] as QueueController
+    component [Business Controller] as BusinessController
+    component [Customer Controller] as CustomerController
+    component [Feedback Controller] as FeedbackController
+    component [Dashboard Controller] as DashboardController
+  }
+  
+  package "Service Layer" {
+    component [Queue Service] as QueueService
+    component [Notification Service] as NotificationService
+    component [Business User Details Service] as UserDetailsService
+  }
+  
+  package "Repository Layer" {
+    component [Queue Repository] as QueueRepo
+    component [Business Repository] as BusinessRepo
+    component [Customer Repository] as CustomerRepo
+    component [Queue Entry Repository] as QueueEntryRepo
+    component [Feedback Repository] as FeedbackRepo
+    component [Notification Repository] as NotificationRepo
+    component [Staff Repository] as StaffRepo
+  }
+  
+  package "Security & Config" {
+    component [Security Config] as SecurityConfig
+    component [CORS Config] as CORSConfig
+    component [Auth Interceptor] as AuthInterceptor
+  }
+}
+
+package "Data Layer" {
+  database "MySQL Database" as MySQL {
+    component [businesses] as BusinessTable
+    component [queues] as QueueTable
+    component [customers] as CustomerTable
+    component [queue_entries] as QueueEntryTable
+    component [feedbacks] as FeedbackTable
+    component [notifications] as NotificationTable
+    component [staff] as StaffTable
+  }
+}
+
+package "External Services" {
+  component [Email Service (SMTP)] as EmailService
+  component [SMS Service] as SMSService
+  component [WebSocket] as WebSocket
+}
+
+package "Infrastructure" {
+  component [AWS ECS] as ECS
+  component [AWS RDS] as RDS
+  component [AWS S3] as S3
+  component [AWS CloudFront] as CloudFront
+  component [Load Balancer] as ALB
+}
+
+' Frontend internal relationships
+CustomerApp --> APIService
+BusinessDashboard --> APIService
+PublicDisplay --> APIService
+MobileInterface --> APIService
+
+APIService --> QueueSvc
+APIService --> BusinessSvc
+APIService --> CustomerSvc
+APIService --> FeedbackSvc
+APIService --> AuthSvc
+
+HomeComp --> BusinessSvc
+BusinessListComp --> BusinessSvc
+QueueDetailComp --> QueueSvc
+CustomerRegComp --> CustomerSvc
+FeedbackComp --> FeedbackSvc
+QueueMgmtComp --> QueueSvc
+
+' Frontend to Backend
+APIService --> QueueController : HTTP/REST
+APIService --> BusinessController : HTTP/REST
+APIService --> CustomerController : HTTP/REST
+APIService --> FeedbackController : HTTP/REST
+APIService --> DashboardController : HTTP/REST
+
+' Controller to Service relationships
+QueueController --> QueueService
+QueueController --> NotificationService
+BusinessController --> BusinessRepo
+CustomerController --> CustomerRepo
+FeedbackController --> FeedbackRepo
+DashboardController --> UserDetailsService
+
+' Service to Repository relationships
+QueueService --> QueueRepo
+QueueService --> QueueEntryRepo
+QueueService --> BusinessRepo
+QueueService --> CustomerRepo
+NotificationService --> NotificationRepo
+UserDetailsService --> BusinessRepo
+
+' Repository to Database relationships
+QueueRepo --> MySQL
+BusinessRepo --> MySQL
+CustomerRepo --> MySQL
+QueueEntryRepo --> MySQL
+FeedbackRepo --> MySQL
+NotificationRepo --> MySQL
+StaffRepo --> MySQL
+
+BusinessTable --> MySQL
+QueueTable --> MySQL
+CustomerTable --> MySQL
+QueueEntryTable --> MySQL
+FeedbackTable --> MySQL
+NotificationTable --> MySQL
+StaffTable --> MySQL
+
+' External service relationships
+NotificationService --> EmailService : SMTP
+NotificationService --> SMSService : API
+QueueService --> WebSocket : Real-time updates
+
+' Infrastructure relationships
+CustomerApp --> ALB : HTTPS
+BusinessDashboard --> ALB : HTTPS
+PublicDisplay --> ALB : HTTPS
+
+ALB --> ECS : Load Balance
+ECS --> RDS : Database Connection
+ECS --> S3 : Static Assets
+CloudFront --> S3 : CDN
+
+MySQL --> RDS : Hosted Database
+
+' Security relationships
+SecurityConfig --> AuthInterceptor
+CORSConfig --> QueueController
+CORSConfig --> BusinessController
+CORSConfig --> CustomerController
+CORSConfig --> FeedbackController
+
+note right of WebSocket
+  Real-time queue updates
+  Auto-refresh displays
+end note
+
+note right of NotificationService
+  Email notifications
+  SMS alerts
+  Push notifications
+end note
+
+note right of MySQL
+  All application data
+  Queue states
+  Customer information
+  Business profiles
+end note
+
+@enduml

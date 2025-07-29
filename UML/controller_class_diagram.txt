@@ -1,0 +1,217 @@
+@startuml Controller_Class_Diagram
+!theme cerulean-outline
+title Common Queue System - Controller Layer Class Diagram
+
+class QueueController {
+  -QueueService queueService
+  --
+  +createQueue(Long, QueueTimingRequest): ResponseEntity<QueueResponse>
+  +updateQueueTiming(Long, QueueTimingRequest): ResponseEntity<QueueResponse>
+  +deleteQueue(Long): ResponseEntity<ApiResponse>
+  +getQueueStatus(Long): ResponseEntity<QueueStatusResponse>
+  +joinQueue(Long, JoinQueueRequest): ResponseEntity<QueueEntryResponse>
+  +callNextCustomer(Long): ResponseEntity<QueueEntryResponse>
+  +markAsServed(Long): ResponseEntity<QueueEntryResponse>
+  +cancelQueueEntry(Long): ResponseEntity<QueueEntryResponse>
+  +markAsNoShow(Long): ResponseEntity<QueueEntryResponse>
+  +getCustomerPosition(Long, Long): ResponseEntity<QueueEntryResponse>
+  +getBusinessQueues(Long): ResponseEntity<List<QueueResponse>>
+  +getQueueEntries(Long): ResponseEntity<List<QueueEntryResponse>>
+  +resetQueue(Long): ResponseEntity<ApiResponse>
+  +getQueueStatistics(Long, LocalDateTime, LocalDateTime): ResponseEntity<QueueStatistics>
+  +getPublicQueueView(Long): ResponseEntity<List<PublicQueueView>>
+}
+
+class BusinessController {
+  -BusinessRepository businessRepository
+  --
+  +getAllBusinesses(): ResponseEntity<List<BusinessResponse>>
+  +getBusinessById(Long): ResponseEntity<BusinessResponse>
+  +searchBusinesses(String): ResponseEntity<List<BusinessResponse>>
+}
+
+class CustomerController {
+  -CustomerRepository customerRepository
+  --
+  +registerCustomer(CustomerRegistrationRequest): ResponseEntity<CustomerResponse>
+  +getCustomer(Long): ResponseEntity<CustomerResponse>
+  +updateCustomer(Long, CustomerRegistrationRequest): ResponseEntity<CustomerResponse>
+}
+
+class FeedbackController {
+  -FeedbackRepository feedbackRepository
+  -CustomerRepository customerRepository
+  -BusinessRepository businessRepository
+  -QueueEntryRepository queueEntryRepository
+  --
+  +submitFeedback(FeedbackRequest): ResponseEntity<FeedbackResponse>
+  +getBusinessFeedback(Long): ResponseEntity<List<FeedbackResponse>>
+  +getCustomerFeedback(Long): ResponseEntity<List<FeedbackResponse>>
+}
+
+class DashboardController {
+  --
+  +dashboard(Authentication): Map<String, Object>
+}
+
+' DTO Classes
+class QueueTimingRequest {
+  -String queueName
+  -String description
+  -QueueType queueType
+  -Integer avgServiceTimeMinutes
+  -Integer maxCapacity
+  -String colorCode
+}
+
+class QueueResponse {
+  -Long id
+  -String queueName
+  -String description
+  -QueueType queueType
+  -Integer avgServiceTimeMinutes
+  -Integer currentNumber
+  -Integer nextNumber
+  -Boolean isActive
+  -Integer maxCapacity
+  -String colorCode
+  --
+  +fromEntity(Queue): QueueResponse
+}
+
+class QueueStatusResponse {
+  -Long queueId
+  -String queueName
+  -Integer currentNumber
+  -Integer nextNumber
+  -Integer totalWaiting
+  -Integer estimatedWaitTime
+  -Boolean isActive
+  -Integer maxCapacity
+  -Integer avgServiceTime
+  -Long servedToday
+}
+
+class QueueEntryResponse {
+  -Long id
+  -Long queueId
+  -String queueName
+  -Long customerId
+  -String customerName
+  -Integer queueNumber
+  -QueueEntryStatus status
+  -Integer estimatedWaitTimeMinutes
+  -LocalDateTime joinedAt
+  -LocalDateTime calledAt
+  -LocalDateTime servedAt
+  -Integer positionInQueue
+  -String businessName
+  --
+  +fromEntity(QueueEntry): QueueEntryResponse
+}
+
+class BusinessResponse {
+  -Long id
+  -String businessName
+  -String email
+  -String phone
+  -String address
+  -String description
+  -String logoUrl
+  -String themeColor
+  -LocalTime openingTime
+  -LocalTime closingTime
+  -Boolean isActive
+  -Boolean isVerified
+  -BusinessType businessType
+  -LocalDateTime createdAt
+  -boolean isOpen
+  --
+  +fromEntity(Business): BusinessResponse
+}
+
+class CustomerResponse {
+  -Long id
+  -String name
+  -String email
+  -String phone
+  -NotificationPreference notificationPreference
+  -String languagePreference
+  -Boolean isActive
+  -LocalDateTime createdAt
+  -LocalDateTime lastLogin
+  --
+  +fromEntity(Customer): CustomerResponse
+}
+
+class FeedbackResponse {
+  -Long id
+  -String customerName
+  -String businessName
+  -Integer accuracyRating
+  -Integer serviceRating
+  -String comment
+  -FeedbackType feedbackType
+  -Boolean isAnonymous
+  -LocalDateTime createdAt
+  -Double overallRating
+  --
+  +fromEntity(Feedback): FeedbackResponse
+}
+
+class ApiResponse {
+  -boolean success
+  -String message
+  -Object data
+}
+
+' Request DTOs
+class CustomerRegistrationRequest {
+  -String name
+  -String email
+  -String phone
+  -String languagePreference
+}
+
+class FeedbackRequest {
+  -Long customerId
+  -Long businessId
+  -Long queueEntryId
+  -Integer accuracyRating
+  -Integer serviceRating
+  -String comment
+  -Boolean isAnonymous
+}
+
+class JoinQueueRequest {
+  -Long customerId
+}
+
+class PublicQueueView {
+  -Long queueId
+  -String queueName
+  -Integer currentNumber
+  -Integer totalWaiting
+  -Integer estimatedWaitTime
+  -String colorCode
+  -String queueType
+}
+
+' Relationships
+QueueController --> QueueTimingRequest
+QueueController --> QueueResponse
+QueueController --> QueueStatusResponse
+QueueController --> QueueEntryResponse
+QueueController --> JoinQueueRequest
+QueueController --> PublicQueueView
+QueueController --> ApiResponse
+
+BusinessController --> BusinessResponse
+
+CustomerController --> CustomerRegistrationRequest
+CustomerController --> CustomerResponse
+
+FeedbackController --> FeedbackRequest
+FeedbackController --> FeedbackResponse
+
+@enduml

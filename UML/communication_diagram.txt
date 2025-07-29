@@ -1,0 +1,64 @@
+@startuml Communication_Diagram
+!theme cerulean-outline
+title Common Queue System - Real-time Communication Diagram
+
+object ":Staff Interface" as Staff
+object ":Queue Service" as QueueService
+object ":Database" as Database
+object ":Notification Service" as NotificationService
+object ":Customer App" as CustomerApp
+object ":Public Display" as PublicDisplay
+object ":WebSocket Handler" as WebSocket
+object ":Email Service" as EmailService
+object ":SMS Service" as SMSService
+
+Staff -> QueueService : 1: callNextCustomer(queueId)
+QueueService -> Database : 2: updateQueueEntry(status=CALLED)
+QueueService -> Database : 3: updateQueue(currentNumber)
+QueueService -> WebSocket : 4: broadcastQueueUpdate(queueStatus)
+QueueService -> NotificationService : 5: sendTurnReadyNotification(entry)
+
+WebSocket -> CustomerApp : 6: onQueueStatusChange(newStatus)
+WebSocket -> PublicDisplay : 7: onQueueStatusChange(newStatus)
+
+NotificationService -> Database : 8: createNotification(entry)
+NotificationService -> EmailService : 9: sendEmail(customer, message)
+NotificationService -> SMSService : 10: sendSMS(customer, message)
+
+EmailService -> NotificationService : 11: emailSent(status)
+SMSService -> NotificationService : 12: smsSent(status)
+NotificationService -> Database : 13: updateNotificationStatus(status)
+
+CustomerApp -> QueueService : 14: getQueuePosition(customerId, queueId)
+QueueService -> Database : 15: findQueueEntry(customerId, queueId)
+Database -> QueueService : 16: queueEntryData
+QueueService -> CustomerApp : 17: positionResponse
+
+PublicDisplay -> QueueService : 18: getPublicQueueView(businessId)
+QueueService -> Database : 19: findActiveQueues(businessId)
+Database -> QueueService : 20: queueList
+QueueService -> PublicDisplay : 21: publicQueueData
+
+' Auto-refresh cycle
+CustomerApp -> WebSocket : 22: subscribeToQueue(queueId)
+PublicDisplay -> WebSocket : 23: subscribeToBusiness(businessId)
+
+note right of WebSocket
+  Handles real-time connections
+  for instant queue updates
+  Auto-refresh every 10-30 seconds
+end note
+
+note right of NotificationService
+  Async notification processing
+  Email and SMS notifications
+  Retry failed notifications
+end note
+
+note bottom of Database
+  Central data store
+  Queue states and customer info
+  Notification logs and status
+end note
+
+@enduml

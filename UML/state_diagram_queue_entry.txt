@@ -1,0 +1,105 @@
+@startuml State_Diagram_Queue_Entry
+!theme cerulean-outline
+title Common Queue System - Queue Entry State Diagram
+
+[*] --> WAITING : Customer joins queue\n/ Generate queue number\n/ Calculate wait time\n/ Send confirmation
+
+state WAITING {
+  WAITING : entry / Set position in queue
+  WAITING : entry / Set estimated wait time
+  WAITING : do / Monitor position changes
+  WAITING : do / Update wait time estimates
+  WAITING : do / Check notification triggers
+  
+  state NotificationCheck <<choice>>
+  WAITING --> NotificationCheck : Check time
+  NotificationCheck --> WAITING : [15 min remaining] / Send approaching notification
+  NotificationCheck --> WAITING : [5 min remaining] / Send reminder notification
+  NotificationCheck --> WAITING : [else] / Continue waiting
+}
+
+WAITING --> CALLED : Staff calls next customer\n/ Update current number\n/ Send "turn ready" notification
+
+state CALLED {
+  CALLED : entry / Set called timestamp
+  CALLED : entry / Notify customer immediately
+  CALLED : do / Wait for customer response
+  CALLED : timeout after 10 minutes / Auto no-show
+}
+
+CALLED --> SERVED : Customer arrives\n/ Staff marks as served\n/ Send feedback request
+CALLED --> NO_SHOW : Customer doesn't show\n/ Staff marks as no-show\n/ Call next customer
+
+state SERVED {
+  SERVED : entry / Set served timestamp
+  SERVED : entry / Calculate actual wait time
+  SERVED : entry / Update queue statistics
+  SERVED : entry / Send feedback request notification
+}
+
+state NO_SHOW {
+  NO_SHOW : entry / Set no-show timestamp  
+  NO_SHOW : entry / Update business metrics
+  NO_SHOW : entry / Continue queue processing
+}
+
+state CANCELLED {
+  CANCELLED : entry / Set cancelled timestamp
+  CANCELLED : entry / Update queue positions
+  CANCELLED : entry / Recalculate wait times
+}
+
+WAITING --> CANCELLED : Customer cancels\n/ Remove from queue\n/ Update positions
+
+' Final states
+SERVED --> [*] : Queue entry completed
+NO_SHOW --> [*] : Queue entry completed  
+CANCELLED --> [*] : Queue entry completed
+
+' Concurrent states for notifications
+state NotificationStates {
+  state NotificationSent {
+    NotificationSent : Approaching notification sent
+  }
+  
+  state ReminderSent {
+    ReminderSent : Reminder notification sent
+  }
+}
+
+WAITING ||-- NotificationStates : Parallel notifications
+
+note right of WAITING
+  Customer is in queue and waiting.
+  Position and wait time are 
+  continuously updated as other
+  customers are served.
+end note
+
+note right of CALLED
+  Customer's turn has arrived.
+  They have limited time to
+  respond before being marked
+  as no-show.
+end note
+
+note right of SERVED
+  Service completed successfully.
+  Customer may be asked to
+  provide feedback on queue
+  accuracy and service quality.
+end note
+
+note right of NO_SHOW
+  Customer didn't respond when
+  called. Queue continues with
+  next customer automatically.
+end note
+
+note right of CANCELLED
+  Customer chose to leave queue
+  before being served. All
+  subsequent positions updated.
+end note
+
+@enduml

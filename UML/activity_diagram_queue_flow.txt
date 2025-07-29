@@ -1,0 +1,152 @@
+@startuml Activity_Diagram_Queue_Flow
+!theme cerulean-outline
+title Common Queue System - Complete Queue Flow Activity Diagram
+
+|Customer|
+start
+:Browse businesses;
+:Select business;
+:View queue status;
+
+if (Customer registered?) then (no)
+  :Fill registration form;
+  :Submit customer details;
+  :Receive confirmation;
+else (yes)
+endif
+
+:Select queue to join;
+
+if (Queue active and not full?) then (no)
+  :Show error message;
+  stop
+else (yes)
+endif
+
+:Join queue;
+:Receive queue number;
+:Get estimated wait time;
+
+|System|
+:Generate queue number;
+:Calculate wait time;
+:Send confirmation notification;
+:Add to queue database;
+
+|Customer|
+:Wait for notifications;
+
+|System|
+fork
+  :Monitor queue position;
+  :Update wait times;
+fork again
+  :Check notification triggers;
+  if (15 min before turn?) then (yes)
+    :Send approaching notification;
+  endif
+  if (5 min before turn?) then (yes)
+    :Send reminder notification;
+  endif
+end fork
+
+|Staff|
+:View queue management;
+:Monitor waiting customers;
+
+repeat
+  :Check for next customer;
+  if (Customers waiting?) then (yes)
+    :Call next customer;
+    
+    |System|
+    :Update queue status;
+    :Mark customer as called;
+    :Send "turn ready" notification;
+    :Update remaining wait times;
+    
+    |Customer|
+    :Receive notification;
+    :Proceed to service;
+    
+    |Staff|
+    :Serve customer;
+    
+    if (Customer shows up?) then (yes)
+      :Mark as served;
+      
+      |System|
+      :Update queue entry;
+      :Send feedback request;
+      
+      |Customer|
+      if (Provide feedback?) then (yes)
+        :Rate queue accuracy;
+        :Rate service quality;
+        :Submit feedback;
+        
+        |System|
+        :Store feedback;
+        :Update business metrics;
+      endif
+      
+    else (no)
+      :Mark as no-show;
+      
+      |System|
+      :Update queue entry;
+      :Continue to next customer;
+    endif
+    
+  else (no)
+    :Wait for customers;
+  endif
+repeat while (Queue active?)
+
+|Business Owner|
+:View analytics;
+:Monitor feedback;
+:Adjust queue settings;
+
+if (Reset queue?) then (yes)
+  :Reset queue numbers;
+  
+  |System|
+  :Clear queue entries;
+  :Reset counters;
+  :Notify waiting customers;
+endif
+
+|System|
+fork
+  :Generate daily reports;
+fork again
+  :Backup queue data;
+fork again
+  :Clean old notifications;
+fork again
+  :Process failed notifications;
+end fork
+
+stop
+
+note right of "Join queue"
+  Queue capacity and 
+  duplicate entry checks
+  are performed here
+end note
+
+note right of "Call next customer"
+  Automatic position updates
+  for all remaining customers
+  in the queue
+end note
+
+note right of "Send feedback request"
+  Sent after customer
+  is marked as served,
+  allows rating queue
+  time accuracy
+end note
+
+@enduml
