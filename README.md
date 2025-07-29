@@ -5,6 +5,7 @@ Find the SQL Script in the dbscript folder and run it. It generates all tables a
 
 ## Frontend Angular App:
 >npm install --legacy-peer-deps
+>
 >npm start
 
 ## Frontend Angular App:
